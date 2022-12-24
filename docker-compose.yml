@@ -1,0 +1,115 @@
+---
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.24.0.0/16
+
+services:
+  ######################
+  # Web Frontend
+  ######################
+  php:
+    image: aeon/php
+    build: ./apps/php/build
+    command: -R
+    restart: unless-stopped
+    ports: [ 127.10.1.1:9000-9100:9000-9100/tcp ]
+    volumes:
+      - ./apps/php/config/php:/usr/local/etc/php:ro
+      - ./apps/php/config/php-fpm.d:/usr/local/etc/php-fpm.d:ro
+      - ./apps/php/config/php-fpm.conf:/usr/local/etc/php-fpm.conf:ro
+      # nginx
+      - /var/www:/var/www
+      # nginx: drive.vmm.pw (nextcloud)
+      - ~/Downloads:/var/www/pw.vmm.drive/data/aeon/files/Downloads
+      - ~/Documents:/var/www/pw.vmm.drive/data/aeon/files/Documents
+      - ~/Pictures:/var/www/pw.vmm.drive/data/aeon/files/Pictures
+      - ~/Public:/var/www/pw.vmm.public/data/aeon/files/Public
+
+  nginx-sso:
+    image: docker.io/luzifer/nginx-sso:latest
+    restart: unless-stopped
+    ports: [ 127.10.2.1:8000:8000/tcp ]
+    volumes:
+      - ./apps/nginx-sso/config.yaml:/data/config.yaml:ro
+
+  ######################
+  # Private Stuffs
+  ######################
+
+  photoprism:
+    image: docker.io/photoprism/photoprism:preview
+    restart: unless-stopped
+    healthcheck:
+      test: [ CMD, photoprism, status ]
+      interval: 60s
+      timeout: 10s
+    env_file:
+      - ./apps/photoprism/config.env
+      - ./apps/photoprism/secure.env
+    working_dir: /photoprism
+    devices:
+      - /dev/dri/renderD128:/dev/dri/renderD128 # Intel GPU
+      - /dev/dri/card0:/dev/dri/card0 # wut
+    ports: [ 127.11.1.1:2342:2342/tcp ]
+    volumes:
+      - ~/Pictures:/photoprism/originals
+      - ./apps/photoprism/data:/photoprism/storage
+
+  #######################
+  # Public service?
+  #######################
+
+  libreddit:
+    image: docker.io/spikecodes/libreddit
+    restart: unless-stopped
+    environment:
+      - LIBREDDIT_DEFAULT_SHOW_NSFW=on
+      - LIBREDDIT_DEFAULT_LAYOUT=compact
+    ports: [ 127.11.2.1:8080:8080/tcp ]
+
+  nitter:
+    image: docker.io/zedeus/nitter
+    restart: unless-stopped
+    depends_on: [ nitter-cache-redis ]
+    ports: [ 127.11.3.1:8080:8080/tcp ]
+    volumes: [ ./apps/nitter/nitter.conf:/src/nitter.conf:ro ]
+  nitter-cache-redis:
+    image: docker.io/redis:alpine
+    restart: unless-stopped
+    volumes: [ ./apps/nitter/cache:/data ]
+
+  searxng:
+    image: docker.io/searxng/searxng
+    restart: unless-stopped
+    depends_on: [ searxng-cache-redis ]
+    ports: [ 127.11.4.1:8080:8080/tcp ]
+    volumes: [ ./apps/searxng/data:/etc/searxng:ro ]
+  searxng-cache-redis:
+    image: docker.io/redis:alpine
+    restart: unless-stopped
+    volumes: [ ./apps/searxng/cache:/data ]
+
+  rustdesk-hbbr:
+    image: docker.io/rustdesk/rustdesk-server:latest
+    command: hbbr
+    restart: unless-stopped
+    ports:
+      - 21117:21117
+      - 21119:21119
+    volumes: [ ./apps/rustdesk/hbbr:/root ]
+  rustdesk-hbbs:
+    image: docker.io/rustdesk/rustdesk-server:latest
+    command: "hbbs -r rustdesk-hbbr:21117"
+    restart: unless-stopped
+    depends_on: [ rustdesk-hbbr ]
+    ports:
+      - 21114:21114
+      - 21115:21115
+      - 21116:21116
+      - 21116:21116/udp
+      - 21118:21118
+    volumes: [ ./apps/rustdesk/hbbs:/root ]
+

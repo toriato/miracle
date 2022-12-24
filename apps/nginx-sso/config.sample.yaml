@@ -1,0 +1,45 @@
+---
+listen:
+  addr: "0.0.0.0"
+  port: 8000
+
+login:
+  title: "example.com"
+  default_method: "simple"
+  default_redirect: "https://example.com/"
+  hide_mfa_field: false
+  names:
+    simple: "wutsupp"
+
+cookie:
+  authentication_key: "kPAo8Xa8YLEM9okGkyvnmheucV74jn8FPYaJ3TZmnEsWp9w9oj"
+  prefix: "sso"
+  domain: ".example.com"
+  secure: true
+
+audit_log:
+  targets:
+    - fd://stdout
+  events: ['access_denied', 'login_success', 'login_failure', 'logout', 'validate']
+  headers: ['x-origin-uri']
+  trusted_ip_headers: ["X-Forwarded-For", "RemoteAddr", "X-Real-IP"]
+
+providers:
+  simple:
+    enable_basic_auth: false
+    users:
+      example_user: "$2y$10$AK0LnHbK6DDXG3xqmpfXhOPCCpsI1tPIOChqGMZ2J.qR8/xaeNK7i"
+    groups:
+      admins: ["example_user"]
+    mfa:
+      aeon:
+        - provider: totp
+          attributes:
+            secret: 'XDTHI5I53X4MPL3K3Y'
+
+acl:
+  rule_sets:
+  - rules:
+    - field: "x-host"
+      regexp: "\\.example\\.com$"
+    allow: ["@_authenticated"]
