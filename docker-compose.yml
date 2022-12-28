@@ -26,7 +26,7 @@ services:
       - ~/Downloads:/var/www/pw.vmm.drive/data/aeon/files/Downloads
       - ~/Documents:/var/www/pw.vmm.drive/data/aeon/files/Documents
       - ~/Pictures:/var/www/pw.vmm.drive/data/aeon/files/Pictures
-      - ~/Public:/var/www/pw.vmm.public
+      - /var/www/pw.vmm.public:/var/www/pw.vmm.drive/data/aeon/files/Public
 
   nginx-sso:
     image: docker.io/luzifer/nginx-sso:latest
