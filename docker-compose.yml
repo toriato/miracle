@@ -81,17 +81,6 @@ services:
     restart: unless-stopped
     volumes: [ ./apps/nitter/cache:/data ]
 
-  searxng:
-    image: docker.io/searxng/searxng
-    restart: unless-stopped
-    depends_on: [ searxng-cache-redis ]
-    ports: [ 127.11.4.1:8080:8080/tcp ]
-    volumes: [ ./apps/searxng/data:/etc/searxng:ro ]
-  searxng-cache-redis:
-    image: docker.io/redis:alpine
-    restart: unless-stopped
-    volumes: [ ./apps/searxng/cache:/data ]
-
   rustdesk-hbbr:
     image: docker.io/rustdesk/rustdesk-server:latest
     command: hbbr
